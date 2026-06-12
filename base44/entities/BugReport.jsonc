@@ -1,0 +1,104 @@
+{
+  "name": "BugReport",
+  "type": "object",
+  "properties": {
+    "participant_id": {
+      "type": "string",
+      "description": "ID of the participant who submitted"
+    },
+    "participant_name": {
+      "type": "string",
+      "description": "Name of the participant"
+    },
+    "module": {
+      "type": "string",
+      "enum": [
+        "Customer App",
+        "Admin Dashboard",
+        "Delivery Partner App",
+        "Production Dashboard",
+        "Route Management",
+        "Subscription Management",
+        "Payment System",
+        "Wallet System",
+        "Notification System"
+      ],
+      "description": "Module where the bug was found"
+    },
+    "bug_title": {
+      "type": "string",
+      "description": "Short title of the bug (max 100 chars)"
+    },
+    "steps_to_reproduce": {
+      "type": "string",
+      "description": "Steps to reproduce the bug (max 300 chars)"
+    },
+    "expected_behavior": {
+      "type": "string",
+      "description": "What was expected (max 200 chars)"
+    },
+    "actual_behavior": {
+      "type": "string",
+      "description": "What actually happened (max 200 chars)"
+    },
+    "screenshot_url": {
+      "type": "string",
+      "description": "URL of the uploaded screenshot (required)"
+    },
+    "screen_recording_url": {
+      "type": "string",
+      "description": "URL of the uploaded screen recording (optional)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Pending Review",
+        "Validated",
+        "Duplicate",
+        "Rejected",
+        "Needs More Info"
+      ],
+      "default": "Pending Review",
+      "description": "Current review status"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "Launch Blocker",
+        "Critical",
+        "High",
+        "Medium",
+        "Low"
+      ],
+      "description": "Severity set by Marshal"
+    },
+    "points_awarded": {
+      "type": "number",
+      "default": 0,
+      "description": "Points awarded by Marshal"
+    },
+    "marshal_notes": {
+      "type": "string",
+      "description": "Internal notes from Marshal"
+    },
+    "duplicate_of": {
+      "type": "string",
+      "description": "Report ID this is a duplicate of"
+    },
+    "is_confirming_duplicate": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this report is confirmed as duplicate"
+    }
+  },
+  "required": [
+    "participant_id",
+    "participant_name",
+    "module",
+    "bug_title",
+    "steps_to_reproduce",
+    "expected_behavior",
+    "actual_behavior",
+    "screenshot_url"
+  ]
+}

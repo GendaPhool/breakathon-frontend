@@ -1,0 +1,24 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "participant",
+        "marshal"
+      ],
+      "default": "participant",
+      "description": "User role in the Break-A-Thon"
+    },
+    "participant_id": {
+      "type": "string",
+      "description": "Unique participant identifier"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Phone number used as marshal login password"
+    }
+  },
+  "required": []
+}
