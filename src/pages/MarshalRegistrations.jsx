@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { entities, auth, uploadFile } from "@/api/apiClient";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -23,7 +23,7 @@ export default function MarshalRegistrations() {
 
   const { data: registrations = [], isLoading } = useQuery({
     queryKey: ["allRegistrations"],
-    queryFn: () => base44.entities.Registration.list("created_date", 500),
+    queryFn: () => entities.Registration.list("created_date", 500),
   });
 
   const filtered = useMemo(() => {
@@ -39,7 +39,7 @@ export default function MarshalRegistrations() {
   }), [registrations]);
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Registration.update(id, data),
+    mutationFn: ({ id, data }) => entities.Registration.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["allRegistrations"] });
       setSelectedReg(null);

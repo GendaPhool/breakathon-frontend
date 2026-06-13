@@ -1,12 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { entities } from "@/api/apiClient";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertTriangle, Loader2 } from "lucide-react";
 
 export default function DuplicateAwarenessList({ module, confirmed, onConfirm }) {
   const { data: recentBugs = [], isLoading } = useQuery({
     queryKey: ["recentBugs", module],
-    queryFn: () => base44.entities.BugReport.filter({ module }, "-created_date", 10),
+    queryFn: () => entities.BugReport.filter({ module }, "-created_date", 10),
     enabled: !!module,
   });
 

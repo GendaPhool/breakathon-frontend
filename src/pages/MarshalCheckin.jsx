@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { entities, auth, uploadFile } from "@/api/apiClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,7 +14,7 @@ export default function MarshalCheckin() {
 
   const { data: registrations = [], isLoading } = useQuery({
     queryKey: ["allRegistrations"],
-    queryFn: () => base44.entities.Registration.list("created_date", 500),
+    queryFn: () => entities.Registration.list("created_date", 500),
   });
 
   const stats = useMemo(() => {
@@ -35,7 +35,7 @@ export default function MarshalCheckin() {
   }, [registrations, query]);
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Registration.update(id, data),
+    mutationFn: ({ id, data }) => entities.Registration.update(id, data),
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ["allRegistrations"] });
       if (vars.data.checked_in) setJustCheckedIn(vars.id);

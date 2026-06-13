@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { entities, auth, uploadFile } from "@/api/apiClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LayoutDashboard, Bug, AlertTriangle, Trophy } from "lucide-react";
 import { useMemo } from "react";
@@ -24,7 +24,7 @@ const SEVERITY_COLORS = {
 export default function MarshalStats() {
   const { data: reports = [], isLoading } = useQuery({
     queryKey: ["allBugReports"],
-    queryFn: () => base44.entities.BugReport.list("-created_date", 500),
+    queryFn: () => entities.BugReport.list("-created_date", 500),
   });
 
   const stats = useMemo(() => {

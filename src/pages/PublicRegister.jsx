@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { entities, functions, uploadFile } from "@/api/apiClient";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,7 +35,7 @@ export default function PublicRegister() {
   const { data: settings } = useQuery({
     queryKey: ["eventSettings"],
     queryFn: async () => {
-      const list = await base44.entities.EventSettings.list();
+      const list = await entities.EventSettings.list();
       return list[0] || {};
     },
   });
@@ -69,10 +69,10 @@ export default function PublicRegister() {
   const mutation = useMutation({
     mutationFn: async () => {
       // Server-side email uniqueness check + create
-      const existing = await base44.entities.Registration.filter({ email: form.email.toLowerCase().trim() });
+      const existing = await entities.Registration.filter({ email: form.email.toLowerCase().trim() });
       if (existing.length > 0) throw new Error("EMAIL_EXISTS");
 
-      const reg = await base44.entities.Registration.create({
+      const reg = await entities.Registration.create({
         ...form,
         email:             form.email.toLowerCase().trim(),
         phone:             form.phone.replace(/\s/g, ""),
@@ -82,7 +82,7 @@ export default function PublicRegister() {
       });
 
       // Fire-and-forget confirmation email (non-blocking)
-      base44.functions
+      functions
         .invoke("sendRegistrationConfirmation", {
           registration_id: reg.id,
           email:           reg.email,
@@ -129,7 +129,7 @@ export default function PublicRegister() {
 
     try {
       // Step 1 — create order on our backend
-      const res = await base44.functions.invoke("createRazorpayOrder", {});
+      const res = await functions.invoke("createRazorpayOrder", {});
       const { order_id, amount, currency, key_id } = res.data;
 
       const options = {
@@ -146,7 +146,7 @@ export default function PublicRegister() {
         handler: async (response) => {
           try {
             // Step 4 — verify signature on backend before accepting payment
-            const verifyRes = await base44.functions.invoke("createRazorpayOrder/verify", {
+            const verifyRes = await functions.invoke("createRazorpayOrder/verify", {
               razorpay_order_id:   response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature:  response.razorpay_signature,
@@ -238,7 +238,7 @@ export default function PublicRegister() {
             </div>
             <p className="text-xs text-muted-foreground">Screenshot this for your records</p>
             <a
-              href="/"
+              href="/submit"
               className="block w-full text-center bg-primary text-primary-foreground rounded-lg py-3 font-semibold text-sm hover:bg-primary/90 transition-colors"
             >
               Go to Dashboard →

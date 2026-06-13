@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { auth } from "@/api/apiClient";
 import { useAuth } from "@/lib/AuthContext";
 import { Bug, ClipboardList, Trophy, LayoutDashboard, Shield, LogOut, Menu, X, Users, UserCheck, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -82,7 +82,7 @@ export default function AppLayout() {
               </div>
             ) : null}
             <span className="text-sm text-muted-foreground hidden lg:block">{user?.full_name}</span>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => base44.auth.logout()}>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => auth.logout()}>
               <LogOut className="w-4 h-4" />
             </Button>
           </div>
@@ -116,7 +116,7 @@ export default function AppLayout() {
                   Switch Participant ID ({pSession.participant_id})
                 </Button>
               )}
-              <Button variant="ghost" className="w-full justify-start gap-2 text-muted-foreground" onClick={() => base44.auth.logout()}>
+              <Button variant="ghost" className="w-full justify-start gap-2 text-muted-foreground" onClick={() => auth.logout()}>
                 <LogOut className="w-4 h-4" /> Sign Out
               </Button>
             </div>

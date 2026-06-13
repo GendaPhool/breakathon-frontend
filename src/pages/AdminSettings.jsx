@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { entities, uploadFile } from "@/api/apiClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,7 +27,7 @@ export default function AdminSettings() {
   const { data: settings } = useQuery({
     queryKey: ["eventSettings"],
     queryFn: async () => {
-      const list = await base44.entities.EventSettings.list();
+      const list = await entities.EventSettings.list();
       return list[0] || null;
     },
   });
@@ -50,8 +50,8 @@ export default function AdminSettings() {
 
   const saveMutation = useMutation({
     mutationFn: () => {
-      if (settingsId) return base44.entities.EventSettings.update(settingsId, form);
-      return base44.entities.EventSettings.create(form);
+      if (settingsId) return entities.EventSettings.update(settingsId, form);
+      return entities.EventSettings.create(form);
     },
     onSuccess: (data) => {
       if (!settingsId) setSettingsId(data.id);
@@ -65,7 +65,7 @@ export default function AdminSettings() {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadingQr(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    const { file_url } = await uploadFile(file);
     setForm((p) => ({ ...p, upi_qr_url: file_url }));
     setUploadingQr(false);
   };

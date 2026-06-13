@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { entities } from "@/api/apiClient";
 import { Trophy, Bug, CheckCircle2, Crown, Medal } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useMemo } from "react";
@@ -7,7 +7,7 @@ import { useMemo } from "react";
 export default function Leaderboard() {
   const { data: allReports = [], isLoading } = useQuery({
     queryKey: ["leaderboardReports"],
-    queryFn: () => base44.entities.BugReport.list("-created_date", 500),
+    queryFn: () => entities.BugReport.list("-created_date", 500),
     refetchInterval: 60000,
   });
 
