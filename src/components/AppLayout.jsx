@@ -10,7 +10,7 @@ import { useParticipantSession } from "@/components/ParticipantSessionProvider";
 
 export default function AppLayout() {
   const { user } = useAuth();
-  const { session: pSession, logout: pLogout } = useParticipantSession();
+  const { session: pSession } = useParticipantSession();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const role = user?.role || "participant";
@@ -72,19 +72,16 @@ export default function AppLayout() {
                 <Shield className="w-3 h-3" /> Marshal
               </Badge>
             ) : pSession ? (
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 font-mono text-xs">
-                  {pSession.participant_id}
-                </Badge>
-                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={pLogout}>
-                  Switch ID
-                </Button>
-              </div>
+              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 font-mono text-xs">
+                {pSession.participant_id}
+              </Badge>
             ) : null}
             <span className="text-sm text-muted-foreground hidden lg:block">{user?.full_name}</span>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => auth.logout()}>
-              <LogOut className="w-4 h-4" />
-            </Button>
+            {isMarshal && (
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => user?.role?.toLowerCase() === "marshal" ? auth.marshalLogout() : auth.logout()}>
+                <LogOut className="w-4 h-4" />
+              </Button>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -110,16 +107,13 @@ export default function AppLayout() {
                 </Button>
               </Link>
             ))}
-            <div className="pt-2 border-t mt-2 space-y-1">
-              {pSession && !isMarshal && (
-                <Button variant="ghost" className="w-full justify-start gap-2 text-muted-foreground text-xs" onClick={() => { pLogout(); setMobileOpen(false); }}>
-                  Switch Participant ID ({pSession.participant_id})
+            {isMarshal && (
+              <div className="pt-2 border-t mt-2 space-y-1">
+                <Button variant="ghost" className="w-full justify-start gap-2 text-muted-foreground" onClick={() => user?.role?.toLowerCase() === "marshal" ? auth.marshalLogout() : auth.logout()}>
+                  <LogOut className="w-4 h-4" /> Sign Out
                 </Button>
-              )}
-              <Button variant="ghost" className="w-full justify-start gap-2 text-muted-foreground" onClick={() => auth.logout()}>
-                <LogOut className="w-4 h-4" /> Sign Out
-              </Button>
-            </div>
+              </div>
+            )}
           </div>
         )}
       </header>

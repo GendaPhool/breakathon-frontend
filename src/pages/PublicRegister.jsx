@@ -68,10 +68,6 @@ export default function PublicRegister() {
   // ── Submit Registration ───────────────────────────────────────
   const mutation = useMutation({
     mutationFn: async () => {
-      // Server-side email uniqueness check + create
-      const existing = await entities.Registration.filter({ email: form.email.toLowerCase().trim() });
-      if (existing.length > 0) throw new Error("EMAIL_EXISTS");
-
       const reg = await entities.Registration.create({
         ...form,
         email:             form.email.toLowerCase().trim(),
@@ -97,7 +93,8 @@ export default function PublicRegister() {
       setStep(3);
     },
     onError: (err) => {
-      if (err.message === "EMAIL_EXISTS") {
+      // 409 = server rejected duplicate email
+      if (err.status === 409) {
         setErrors({ email: "This email is already registered. Contact us if you have an issue." });
       }
     },
@@ -128,9 +125,11 @@ export default function PublicRegister() {
     setErrors({});
 
     try {
-      // Step 1 — create order on our backend
+      // Step 1 — create order on our backend.
+      // apiClient auto-unwraps {success, data} responses, so `res` is already
+      // the inner data object ({ order_id, amount, currency, key_id }).
       const res = await functions.invoke("createRazorpayOrder", {});
-      const { order_id, amount, currency, key_id } = res.data;
+      const { order_id, amount, currency, key_id } = res;
 
       const options = {
         key:         key_id,
@@ -152,7 +151,7 @@ export default function PublicRegister() {
               razorpay_signature:  response.razorpay_signature,
             });
 
-            if (verifyRes?.data?.verified) {
+            if (verifyRes?.verified) {
               // Step 5 — signature valid, store the payment ID
               update("payment_reference", response.razorpay_payment_id);
             } else {

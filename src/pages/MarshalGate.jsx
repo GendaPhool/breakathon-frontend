@@ -21,7 +21,7 @@ export default function MarshalGate({ onSuccess }) {
     setLoading(true);
     setError("");
     try {
-      const data = await auth.login(cleanEmail, password);
+      const data = await auth.adminLogin(cleanEmail, password);
       const me   = await auth.me();
 
       if (!me || me.role?.toLowerCase() !== "marshal") {

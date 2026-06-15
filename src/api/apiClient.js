@@ -15,8 +15,10 @@ export const clearToken = ()  => localStorage.removeItem(TOKEN_KEY);
 
 // ── Core fetch wrapper ────────────────────────────────────────
 async function request(method, path, body, multipart = false) {
-  const url = `${BASE_URL}/api/apps/${APP_ID}${path}`;
   const token = getToken();
+  // Marshal (has JWT) → /admin namespace. Participant/anonymous → /user namespace.
+  const namespace = token ? "admin" : "user";
+  const url = `${BASE_URL}/api/apps/${APP_ID}/${namespace}${path}`;
 
   const headers = {};
   if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -55,6 +57,13 @@ export const auth = {
     if (data?.access_token) setToken(data.access_token);
     return data;
   },
+  // Marshal-only login — same as login() but hits /admin/login, which
+  // rejects non-MARSHAL accounts server-side.
+  adminLogin: async (email, password) => {
+    const data = await request("POST", "/admin/login", { email, password });
+    if (data?.access_token) setToken(data.access_token);
+    return data;
+  },
   register: async ({ name, email, password }) => {
     const data = await request("POST", "/auth/register", { name, email, password });
     if (data?.access_token) setToken(data.access_token);
@@ -64,7 +73,15 @@ export const auth = {
     // /auth/me returns the raw user object directly (not wrapped in { user: ... })
     return await request("GET", "/auth/me");
   },
-  logout: () => { clearToken(); window.location.href = "/login"; },
+  logout: () => { clearToken(); window.location.href = "/user/login"; },
+  marshalLogout: () => { clearToken(); window.location.href = "/admin/login"; },
+};
+
+// ── Participant (user) auth ──────────────────────────────────
+// No JWT issued — backend just validates email+phone against a checked-in,
+// verified Registration and returns participant_id/name/registration_id.
+export const userAuth = {
+  login: (email, phone) => request("POST", "/user/login", { email, phone }),
 };
 
 // ── Entity helpers ────────────────────────────────────────────

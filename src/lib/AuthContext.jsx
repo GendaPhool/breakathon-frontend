@@ -34,10 +34,10 @@ export const AuthProvider = ({ children }) => {
     clearToken();
     setUser(null);
     setIsAuthenticated(false);
-    window.location.href = "/login";
+    window.location.href = "/user/login";
   };
 
-  const navigateToLogin = () => { window.location.href = "/login"; };
+  const navigateToLogin = () => { window.location.href = "/user/login"; };
 
   return (
     <AuthContext.Provider value={{
