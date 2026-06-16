@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { entities, auth, uploadFile } from "@/api/apiClient";
 import { Card, CardContent } from "@/components/ui/card";
 import { ClipboardList } from "lucide-react";
 import StatusBadge from "@/components/StatusBadge";
@@ -12,7 +12,7 @@ function MyReportsContent() {
 
   const { data: reports = [], isLoading } = useQuery({
     queryKey: ["myReports", pSession?.participant_id],
-    queryFn: () => base44.entities.BugReport.filter({ participant_id: pSession.participant_id }, "-created_date"),
+    queryFn: () => entities.BugReport.filter({ participant_id: pSession.participant_id }, "-created_date"),
     enabled: !!pSession?.participant_id,
   });
 

@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { entities, auth, uploadFile } from "@/api/apiClient";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CheckCircle2, XCircle, Copy, HelpCircle, ClipboardList } from "lucide-react";
@@ -24,7 +24,7 @@ export default function MarshalQueue() {
 
   const { data: reports = [], isLoading } = useQuery({
     queryKey: ["allBugReports"],
-    queryFn: () => base44.entities.BugReport.list("created_date", 500),
+    queryFn: () => entities.BugReport.list("created_date", 500),
   });
 
   const filtered = useMemo(() => {
@@ -36,7 +36,7 @@ export default function MarshalQueue() {
   }, [reports, moduleFilter, statusFilter]);
 
   const quickAction = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.BugReport.update(id, data),
+    mutationFn: ({ id, data }) => entities.BugReport.update(id, data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["allBugReports"] }),
   });
 

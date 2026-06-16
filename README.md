@@ -1,39 +1,34 @@
-**Welcome to your Base44 project** 
+# Breakathon Frontend
 
-**About**
+Frontend for the Genda Phool Break-A-Thon app (React + Vite + Tailwind).
 
-View and Edit  your app on [Base44.com](http://Base44.com) 
+## Prerequisites
 
-This project contains everything you need to run your app locally.
-
-**Edit the code in your local development environment**
-
-Any change pushed to the repo will also be reflected in the Base44 Builder.
-
-**Prerequisites:** 
-
-1. Clone the repository using the project's Git URL 
+1. Clone the repository
 2. Navigate to the project directory
 3. Install dependencies: `npm install`
-4. Create an `.env.local` file and set the right environment variables
+4. Create a `.env.local` file with the backend connection details:
 
 ```
-VITE_BASE44_APP_ID=your_app_id
-VITE_BASE44_APP_BASE_URL=your_backend_url
-
-e.g.
-VITE_BASE44_APP_ID=cbef744a8545c389ef439ea6
-VITE_BASE44_APP_BASE_URL=https://my-to-do-list-81bfaad7.base44.app
+VITE_API_BASE_URL=http://localhost:3000
+VITE_APP_ID=default
 ```
 
-Run the app: `npm run dev`
+`VITE_API_BASE_URL` should point at the running `breakathon-backend` server.
+`VITE_APP_ID` is a path segment used by the backend's `/api/apps/:appId/*`
+routes and can be left as `default` unless your backend expects a specific value.
 
-**Publish your changes**
+## Run the app
 
-Open [Base44.com](http://Base44.com) and click on Publish.
+```
+npm run dev
+```
 
-**Docs & Support**
+The app runs on http://localhost:5173 by default.
 
-Documentation: [https://docs.base44.com/Integrations/Using-GitHub](https://docs.base44.com/Integrations/Using-GitHub)
+## Build for production
 
-Support: [https://app.base44.com/support](https://app.base44.com/support)
+```
+npm run build
+npm run preview
+```
