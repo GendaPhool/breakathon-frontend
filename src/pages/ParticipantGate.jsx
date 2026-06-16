@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { entities } from "@/api/apiClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,42 +8,41 @@ import { Bug, AlertCircle, Clock, Shield, Eye, EyeOff } from "lucide-react";
 import { setParticipantSession } from "@/lib/participantSession";
 
 export default function ParticipantGate({ onSuccess }) {
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  const [email,     setEmail]     = useState("");
+  const [phone,     setPhone]     = useState("");
   const [showPhone, setShowPhone] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [loading,   setLoading]   = useState(false);
+  const [error,     setError]     = useState("");
 
   const handleVerify = async () => {
     const cleanEmail = email.trim().toLowerCase();
     const cleanPhone = phone.trim().replace(/\s/g, "");
     if (!cleanEmail) { setError("Please enter your email address"); return; }
-    if (!cleanPhone) { setError("Please enter your phone number"); return; }
+    if (!cleanPhone) { setError("Please enter your phone number");  return; }
 
     setLoading(true);
     setError("");
+    try {
+      const results = await entities.Registration.filter({ email: cleanEmail, phone: cleanPhone });
 
-    const results = await base44.entities.Registration.filter({
-      email: cleanEmail,
-      phone: cleanPhone,
-    });
+      if (results.length === 0) {
+        setError("Email or phone is incorrect. Check your details or speak to a Marshal.");
+        return;
+      }
 
-    setLoading(false);
+      const reg = results[0];
+      if (!reg.checked_in) {
+        setError("You haven't been checked in yet. Please visit the registration desk.");
+        return;
+      }
 
-    if (results.length === 0) {
-      setError("Email or Participant ID is incorrect. Check your details or speak to a Marshal.");
-      return;
+      setParticipantSession({ participant_id: reg.participant_id, name: reg.name, registration_id: reg.id });
+      onSuccess({ participant_id: reg.participant_id, name: reg.name });
+    } catch (err) {
+      setError(err.message || "Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
     }
-
-    const reg = results[0];
-
-    if (!reg.checked_in) {
-      setError("You haven't been checked in yet. Please visit the registration desk.");
-      return;
-    }
-
-    setParticipantSession({ participant_id: reg.participant_id, name: reg.name, registration_id: reg.id });
-    onSuccess({ participant_id: reg.participant_id, name: reg.name });
   };
 
   return (
@@ -54,38 +53,29 @@ export default function ParticipantGate({ onSuccess }) {
             <Bug className="w-7 h-7 text-primary" />
           </div>
           <h2 className="text-xl font-display font-bold">Participant Login</h2>
-          <p className="text-sm text-muted-foreground mt-1">Use your registered email and password</p>
+          <p className="text-sm text-muted-foreground mt-1">Use your registered email and phone number</p>
         </div>
 
         <Card>
           <CardContent className="pt-5 pb-5 space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-sm">Email (username)</Label>
-              <Input
-                type="email"
-                value={email}
+              <Label className="text-sm">Email</Label>
+              <Input type="email" value={email}
                 onChange={(e) => { setEmail(e.target.value); setError(""); }}
                 placeholder="you@email.com"
-                onKeyDown={(e) => e.key === "Enter" && handleVerify()}
-              />
+                onKeyDown={(e) => e.key === "Enter" && handleVerify()} />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-sm">Password</Label>
+              <Label className="text-sm">Phone Number (Password)</Label>
               <div className="relative">
-                <Input
-                  type={showPhone ? "text" : "password"}
-                  value={phone}
+                <Input type={showPhone ? "text" : "password"} value={phone}
                   onChange={(e) => { setPhone(e.target.value); setError(""); }}
-                  placeholder="Enter your password"
-                  className="pr-10"
-                  onKeyDown={(e) => e.key === "Enter" && handleVerify()}
-                />
-                <button
-                  type="button"
+                  placeholder="Your registered phone number" className="pr-10"
+                  onKeyDown={(e) => e.key === "Enter" && handleVerify()} />
+                <button type="button"
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  onClick={() => setShowPhone((v) => !v)}
-                >
+                  onClick={() => setShowPhone((v) => !v)}>
                   {showPhone ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
@@ -93,8 +83,7 @@ export default function ParticipantGate({ onSuccess }) {
 
             {error && (
               <div className="flex items-start gap-2 text-sm text-destructive bg-destructive/5 rounded-lg p-3">
-                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                <span>{error}</span>
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" /><span>{error}</span>
               </div>
             )}
 

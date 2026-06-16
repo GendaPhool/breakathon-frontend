@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { entities } from "@/api/apiClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,7 +38,7 @@ export default function BugDetailPanel({ report, onClose }) {
   };
 
   const updateMutation = useMutation({
-    mutationFn: (data) => base44.entities.BugReport.update(report.id, data),
+    mutationFn: (data) => entities.BugReport.update(report.id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["allBugReports"] });
       onClose();

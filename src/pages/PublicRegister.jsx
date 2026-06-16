@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { entities, functions, uploadFile } from "@/api/apiClient";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,7 +35,7 @@ export default function PublicRegister() {
   const { data: settings } = useQuery({
     queryKey: ["eventSettings"],
     queryFn: async () => {
-      const list = await base44.entities.EventSettings.list();
+      const list = await entities.EventSettings.list();
       return list[0] || {};
     },
   });
@@ -68,11 +68,7 @@ export default function PublicRegister() {
   // ── Submit Registration ───────────────────────────────────────
   const mutation = useMutation({
     mutationFn: async () => {
-      // Server-side email uniqueness check + create
-      const existing = await base44.entities.Registration.filter({ email: form.email.toLowerCase().trim() });
-      if (existing.length > 0) throw new Error("EMAIL_EXISTS");
-
-      const reg = await base44.entities.Registration.create({
+      const reg = await entities.Registration.create({
         ...form,
         email:             form.email.toLowerCase().trim(),
         phone:             form.phone.replace(/\s/g, ""),
@@ -82,7 +78,7 @@ export default function PublicRegister() {
       });
 
       // Fire-and-forget confirmation email (non-blocking)
-      base44.functions
+      functions
         .invoke("sendRegistrationConfirmation", {
           registration_id: reg.id,
           email:           reg.email,
@@ -97,7 +93,8 @@ export default function PublicRegister() {
       setStep(3);
     },
     onError: (err) => {
-      if (err.message === "EMAIL_EXISTS") {
+      // 409 = server rejected duplicate email
+      if (err.status === 409) {
         setErrors({ email: "This email is already registered. Contact us if you have an issue." });
       }
     },
@@ -128,9 +125,11 @@ export default function PublicRegister() {
     setErrors({});
 
     try {
-      // Step 1 — create order on our backend
-      const res = await base44.functions.invoke("createRazorpayOrder", {});
-      const { order_id, amount, currency, key_id } = res.data;
+      // Step 1 — create order on our backend.
+      // apiClient auto-unwraps {success, data} responses, so `res` is already
+      // the inner data object ({ order_id, amount, currency, key_id }).
+      const res = await functions.invoke("createRazorpayOrder", {});
+      const { order_id, amount, currency, key_id } = res;
 
       const options = {
         key:         key_id,
@@ -146,13 +145,13 @@ export default function PublicRegister() {
         handler: async (response) => {
           try {
             // Step 4 — verify signature on backend before accepting payment
-            const verifyRes = await base44.functions.invoke("createRazorpayOrder/verify", {
+            const verifyRes = await functions.invoke("createRazorpayOrder/verify", {
               razorpay_order_id:   response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature:  response.razorpay_signature,
             });
 
-            if (verifyRes?.data?.verified) {
+            if (verifyRes?.verified) {
               // Step 5 — signature valid, store the payment ID
               update("payment_reference", response.razorpay_payment_id);
             } else {
@@ -178,8 +177,22 @@ export default function PublicRegister() {
     }
   };
 
-  // ── Registration Closed screen ────────────────────────────────
-  if (settings?.registration_open === false) {
+  // ── Registration gate checks (evaluated in priority order) ──
+  const regFee = settings?.registration_fee ?? 149;
+  const deadlinePassed = settings?.registration_deadline
+    ? new Date() > new Date(settings.registration_deadline)
+    : false;
+  const limitReached = settings?.max_participants
+    ? (settings.current_participants ?? 0) >= settings.max_participants
+    : false;
+
+  const closedReason =
+    settings?.registration_open === false ? "Registrations are currently closed." :
+    deadlinePassed                         ? "Registration deadline has passed." :
+    limitReached                           ? "Participant limit reached." :
+    null;
+
+  if (closedReason) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="max-w-sm w-full text-center">
@@ -189,7 +202,7 @@ export default function PublicRegister() {
             </div>
             <h2 className="text-xl font-display font-bold">Registration Closed</h2>
             <p className="text-muted-foreground text-sm">
-              Registration for {settings?.event_name || "Break-A-Thon"} is currently closed.
+              {closedReason}
             </p>
           </CardContent>
         </Card>
@@ -238,7 +251,7 @@ export default function PublicRegister() {
             </div>
             <p className="text-xs text-muted-foreground">Screenshot this for your records</p>
             <a
-              href="/"
+              href="/submit"
               className="block w-full text-center bg-primary text-primary-foreground rounded-lg py-3 font-semibold text-sm hover:bg-primary/90 transition-colors"
             >
               Go to Dashboard →
@@ -253,29 +266,40 @@ export default function PublicRegister() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero banner */}
-      <div className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
-        <div className="max-w-lg mx-auto px-4 py-8 text-center">
+      <div
+        className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground"
+        style={settings?.event_banner ? { backgroundImage: `url(${settings.event_banner})`, backgroundSize: "cover", backgroundPosition: "center" } : {}}
+      >
+        <div className="max-w-lg mx-auto px-4 py-8 text-center" style={settings?.event_banner ? { background: "rgba(0,0,0,0.5)", borderRadius: 0 } : {}}>
           <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center mx-auto mb-4">
             <Bug className="w-6 h-6 text-white" />
           </div>
           <h1 className="text-2xl font-display font-bold">
             {settings?.event_name || "Genda Phool Break-A-Thon"}
           </h1>
+          {settings?.event_description && (
+            <p className="text-white/80 text-sm mt-1">{settings.event_description}</p>
+          )}
           <p className="text-white/80 text-sm mt-1">Bug Hunting Competition</p>
           <div className="flex flex-wrap justify-center gap-4 mt-4 text-sm">
-            <span className="flex items-center gap-1.5 bg-white/10 rounded-full px-3 py-1">
-              <Calendar className="w-3.5 h-3.5" /> 13th June, 2026
-            </span>
-            <span className="flex items-center gap-1.5 bg-white/10 rounded-full px-3 py-1">
-              <Clock className="w-3.5 h-3.5" /> 3 Hours
-            </span>
-            <span className="flex items-center gap-1.5 bg-white/10 rounded-full px-3 py-1">
-              <MapPin className="w-3.5 h-3.5" /> Vadodara
-            </span>
+            {settings?.event_date && (
+              <span className="flex items-center gap-1.5 bg-white/10 rounded-full px-3 py-1">
+                <Calendar className="w-3.5 h-3.5" /> {settings.event_date}
+              </span>
+            )}
+            {settings?.event_time && (
+              <span className="flex items-center gap-1.5 bg-white/10 rounded-full px-3 py-1">
+                <Clock className="w-3.5 h-3.5" /> {settings.event_time}
+              </span>
+            )}
+            {settings?.venue && (
+              <span className="flex items-center gap-1.5 bg-white/10 rounded-full px-3 py-1">
+                <MapPin className="w-3.5 h-3.5" /> {settings.venue}
+              </span>
+            )}
           </div>
-          <p className="text-white/60 text-xs mt-2">Time & Venue to be announced soon</p>
           <div className="mt-3 bg-white/20 rounded-full px-3 py-1 inline-block">
-            <span className="text-sm font-semibold">₹149</span>
+            <span className="text-sm font-semibold">₹{regFee}</span>
             <span className="text-white/70 text-xs ml-1">Registration Fee</span>
           </div>
         </div>
@@ -344,7 +368,7 @@ export default function PublicRegister() {
             <CardContent className="pt-5 space-y-4">
               <div className="mb-4">
                 <h2 className="text-lg font-display font-bold">Step 2 of 3: Payment</h2>
-                <p className="text-sm text-muted-foreground mt-1">Complete your ₹149 registration</p>
+                <p className="text-sm text-muted-foreground mt-1">Complete your ₹{regFee} registration</p>
               </div>
 
               {/* Razorpay payment button */}
