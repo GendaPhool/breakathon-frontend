@@ -15,18 +15,18 @@ function ParticipantForm() {
   const navigate = useNavigate();
   const { login: setParticipantSession } = useParticipantSession();
 
-  const [email,     setEmail]     = useState("");
-  const [phone,     setPhone]     = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [showPhone, setShowPhone] = useState(false);
-  const [loading,   setLoading]   = useState(false);
-  const [error,     setError]     = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const cleanEmail = email.trim().toLowerCase();
     const cleanPhone = phone.trim().replace(/\s/g, "");
     if (!cleanEmail) { setError("Please enter your email address"); return; }
-    if (!cleanPhone) { setError("Please enter your phone number");  return; }
+    if (!cleanPhone) { setError("Please enter your phone number"); return; }
 
     setLoading(true);
     setError("");
@@ -37,7 +37,7 @@ function ParticipantForm() {
         name: reg.name,
         registration_id: reg.registration_id,
       });
-      navigate("/");
+      navigate("/submit");
     } catch (err) {
       setError(err.message || "Something went wrong. Please try again.");
     } finally {
@@ -86,17 +86,17 @@ function ParticipantForm() {
 function MarshalForm() {
   const navigate = useNavigate();
 
-  const [email,        setEmail]        = useState("");
-  const [password,     setPassword]     = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [loading,      setLoading]      = useState(false);
-  const [error,        setError]        = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail) { setError("Please enter your email address"); return; }
-    if (!password)   { setError("Please enter your password");       return; }
+    if (!password) { setError("Please enter your password"); return; }
 
     setLoading(true);
     setError("");

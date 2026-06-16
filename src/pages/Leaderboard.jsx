@@ -1,14 +1,23 @@
 import { useQuery } from "@tanstack/react-query";
 import { entities } from "@/api/apiClient";
-import { Trophy, Bug, CheckCircle2, Crown, Medal } from "lucide-react";
+import { Trophy, Bug, CheckCircle2, Crown, Medal, EyeOff } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useMemo } from "react";
 
 export default function Leaderboard() {
+  const { data: settings } = useQuery({
+    queryKey: ["eventSettings"],
+    queryFn: async () => {
+      const list = await entities.EventSettings.list();
+      return list[0] || {};
+    },
+  });
+
   const { data: allReports = [], isLoading } = useQuery({
     queryKey: ["leaderboardReports"],
     queryFn: () => entities.BugReport.list("-created_date", 500),
     refetchInterval: 60000,
+    enabled: settings?.leaderboard_visible !== false,
   });
 
   const { leaderboard, totalBugs, totalValidated } = useMemo(() => {
@@ -24,7 +33,9 @@ export default function Leaderboard() {
         };
       }
       participantMap[pid].reports_submitted += 1;
-      participantMap[pid].total_points += r.points_awarded || 0;
+      if (r.status === "Validated" || r.status === "Duplicate") {
+        participantMap[pid].total_points += r.points_awarded || 0;
+      }
       if (r.status === "Validated") participantMap[pid].reports_validated += 1;
     });
 
@@ -52,6 +63,24 @@ export default function Leaderboard() {
   ];
   const podiumIcons = [Medal, Crown, Medal];
   const podiumRanks = [2, 1, 3];
+
+  if (settings && settings.leaderboard_visible === false) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-display font-bold flex items-center gap-2">
+            <Trophy className="w-6 h-6 text-primary" /> Leaderboard
+          </h1>
+        </div>
+        <Card>
+          <CardContent className="py-12 text-center space-y-3">
+            <EyeOff className="w-10 h-10 text-muted-foreground mx-auto" />
+            <p className="text-muted-foreground">The leaderboard is currently hidden.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

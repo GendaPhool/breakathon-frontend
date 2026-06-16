@@ -81,7 +81,12 @@ function SubmitBugForm() {
     form.expected_behavior && form.actual_behavior &&
     screenshotFile && duplicateConfirmed && !mutation.isPending;
 
-  if (settings?.event_started === false) {
+  const submissionClosedReason =
+    settings?.event_ended   === true  ? "Bug submissions are closed — the event has ended." :
+    settings?.event_started === false ? "Bug submissions will open once the marshal starts the event." :
+    null;
+
+  if (submissionClosedReason) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <Card className="max-w-sm w-full text-center">
@@ -89,8 +94,8 @@ function SubmitBugForm() {
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto">
               <Clock className="w-8 h-8 text-muted-foreground" />
             </div>
-            <h2 className="text-xl font-display font-bold">Event Hasn't Started Yet</h2>
-            <p className="text-sm text-muted-foreground">Bug submissions will open once the marshal starts the event.</p>
+            <h2 className="text-xl font-display font-bold">Bug Submissions Closed</h2>
+            <p className="text-sm text-muted-foreground">{submissionClosedReason}</p>
           </CardContent>
         </Card>
       </div>

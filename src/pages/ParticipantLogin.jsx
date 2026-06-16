@@ -34,7 +34,11 @@ export default function ParticipantLogin() {
         name:            reg.name,
         registration_id: reg.registration_id,
       });
+<<<<<<< HEAD
       navigate("/");
+=======
+      navigate("/submit");
+>>>>>>> 97d450abc3e2def69eb53297fdb74819ae42e162
     } catch (err) {
       setError(err.message || "Something went wrong. Please try again.");
     } finally {

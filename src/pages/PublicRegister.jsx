@@ -177,8 +177,22 @@ export default function PublicRegister() {
     }
   };
 
-  // ── Registration Closed screen ────────────────────────────────
-  if (settings?.registration_open === false) {
+  // ── Registration gate checks (evaluated in priority order) ──
+  const regFee = settings?.registration_fee ?? 149;
+  const deadlinePassed = settings?.registration_deadline
+    ? new Date() > new Date(settings.registration_deadline)
+    : false;
+  const limitReached = settings?.max_participants
+    ? (settings.current_participants ?? 0) >= settings.max_participants
+    : false;
+
+  const closedReason =
+    settings?.registration_open === false ? "Registrations are currently closed." :
+    deadlinePassed                         ? "Registration deadline has passed." :
+    limitReached                           ? "Participant limit reached." :
+    null;
+
+  if (closedReason) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="max-w-sm w-full text-center">
@@ -188,7 +202,7 @@ export default function PublicRegister() {
             </div>
             <h2 className="text-xl font-display font-bold">Registration Closed</h2>
             <p className="text-muted-foreground text-sm">
-              Registration for {settings?.event_name || "Break-A-Thon"} is currently closed.
+              {closedReason}
             </p>
           </CardContent>
         </Card>
@@ -252,29 +266,40 @@ export default function PublicRegister() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero banner */}
-      <div className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
-        <div className="max-w-lg mx-auto px-4 py-8 text-center">
+      <div
+        className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground"
+        style={settings?.event_banner ? { backgroundImage: `url(${settings.event_banner})`, backgroundSize: "cover", backgroundPosition: "center" } : {}}
+      >
+        <div className="max-w-lg mx-auto px-4 py-8 text-center" style={settings?.event_banner ? { background: "rgba(0,0,0,0.5)", borderRadius: 0 } : {}}>
           <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center mx-auto mb-4">
             <Bug className="w-6 h-6 text-white" />
           </div>
           <h1 className="text-2xl font-display font-bold">
             {settings?.event_name || "Genda Phool Break-A-Thon"}
           </h1>
+          {settings?.event_description && (
+            <p className="text-white/80 text-sm mt-1">{settings.event_description}</p>
+          )}
           <p className="text-white/80 text-sm mt-1">Bug Hunting Competition</p>
           <div className="flex flex-wrap justify-center gap-4 mt-4 text-sm">
-            <span className="flex items-center gap-1.5 bg-white/10 rounded-full px-3 py-1">
-              <Calendar className="w-3.5 h-3.5" /> 13th June, 2026
-            </span>
-            <span className="flex items-center gap-1.5 bg-white/10 rounded-full px-3 py-1">
-              <Clock className="w-3.5 h-3.5" /> 3 Hours
-            </span>
-            <span className="flex items-center gap-1.5 bg-white/10 rounded-full px-3 py-1">
-              <MapPin className="w-3.5 h-3.5" /> Vadodara
-            </span>
+            {settings?.event_date && (
+              <span className="flex items-center gap-1.5 bg-white/10 rounded-full px-3 py-1">
+                <Calendar className="w-3.5 h-3.5" /> {settings.event_date}
+              </span>
+            )}
+            {settings?.event_time && (
+              <span className="flex items-center gap-1.5 bg-white/10 rounded-full px-3 py-1">
+                <Clock className="w-3.5 h-3.5" /> {settings.event_time}
+              </span>
+            )}
+            {settings?.venue && (
+              <span className="flex items-center gap-1.5 bg-white/10 rounded-full px-3 py-1">
+                <MapPin className="w-3.5 h-3.5" /> {settings.venue}
+              </span>
+            )}
           </div>
-          <p className="text-white/60 text-xs mt-2">Time & Venue to be announced soon</p>
           <div className="mt-3 bg-white/20 rounded-full px-3 py-1 inline-block">
-            <span className="text-sm font-semibold">₹149</span>
+            <span className="text-sm font-semibold">₹{regFee}</span>
             <span className="text-white/70 text-xs ml-1">Registration Fee</span>
           </div>
         </div>
@@ -343,7 +368,7 @@ export default function PublicRegister() {
             <CardContent className="pt-5 space-y-4">
               <div className="mb-4">
                 <h2 className="text-lg font-display font-bold">Step 2 of 3: Payment</h2>
-                <p className="text-sm text-muted-foreground mt-1">Complete your ₹149 registration</p>
+                <p className="text-sm text-muted-foreground mt-1">Complete your ₹{regFee} registration</p>
               </div>
 
               {/* Razorpay payment button */}
