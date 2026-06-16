@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { base44 } from "@/api/base44Client";
-import { useAuth } from "@/lib/AuthContext";
+import { entities, uploadFile } from "@/api/apiClient";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,23 +21,20 @@ const MODULES = [
 function SubmitBugForm() {
   const { session: pSession } = useParticipantSession();
   const [form, setForm] = useState({
-    module: "",
-    bug_title: "",
-    steps_to_reproduce: "",
-    expected_behavior: "",
-    actual_behavior: "",
+    module: "", bug_title: "", steps_to_reproduce: "",
+    expected_behavior: "", actual_behavior: "",
   });
-  const [screenshotFile, setScreenshotFile] = useState(null);
-  const [recordingFile, setRecordingFile] = useState(null);
+  const [screenshotFile,    setScreenshotFile]    = useState(null);
+  const [recordingFile,     setRecordingFile]     = useState(null);
   const [screenshotPreview, setScreenshotPreview] = useState(null);
   const [duplicateConfirmed, setDuplicateConfirmed] = useState(false);
-  const [submitted, setSubmitted] = useState(null);
-  const [uploading, setUploading] = useState(false);
+  const [submitted,  setSubmitted]  = useState(null);
+  const [uploading,  setUploading]  = useState(false);
 
   const { data: settings } = useQuery({
     queryKey: ["eventSettings"],
     queryFn: async () => {
-      const list = await base44.entities.EventSettings.list();
+      const list = await entities.EventSettings.list();
       return list[0] || {};
     },
   });
@@ -57,21 +53,21 @@ function SubmitBugForm() {
   const mutation = useMutation({
     mutationFn: async () => {
       setUploading(true);
-      const { file_url: screenshot_url } = await base44.integrations.Core.UploadFile({ file: screenshotFile });
+      const { file_url: screenshot_url } = await uploadFile(screenshotFile);
       let screen_recording_url = "";
       if (recordingFile) {
-        const res = await base44.integrations.Core.UploadFile({ file: recordingFile });
+        const res = await uploadFile(recordingFile);
         screen_recording_url = res.file_url;
       }
       setUploading(false);
-      return base44.entities.BugReport.create({
+      return entities.BugReport.create({
         ...form,
         screenshot_url,
         screen_recording_url,
-        participant_id: pSession.participant_id,
+        participant_id:   pSession.participant_id,
         participant_name: pSession.name,
-        status: "Pending Review",
-        points_awarded: 0,
+        status:           "Pending Review",
+        points_awarded:   0,
         is_confirming_duplicate: false,
       });
     },
@@ -85,7 +81,12 @@ function SubmitBugForm() {
     form.expected_behavior && form.actual_behavior &&
     screenshotFile && duplicateConfirmed && !mutation.isPending;
 
-  if (settings?.event_started === false) {
+  const submissionClosedReason =
+    settings?.event_ended   === true  ? "Bug submissions are closed — the event has ended." :
+    settings?.event_started === false ? "Bug submissions will open once the marshal starts the event." :
+    null;
+
+  if (submissionClosedReason) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <Card className="max-w-sm w-full text-center">
@@ -93,8 +94,8 @@ function SubmitBugForm() {
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto">
               <Clock className="w-8 h-8 text-muted-foreground" />
             </div>
-            <h2 className="text-xl font-display font-bold">Event Hasn't Started Yet</h2>
-            <p className="text-sm text-muted-foreground">Bug submissions will open once the marshal starts the event.</p>
+            <h2 className="text-xl font-display font-bold">Bug Submissions Closed</h2>
+            <p className="text-sm text-muted-foreground">{submissionClosedReason}</p>
           </CardContent>
         </Card>
       </div>
@@ -140,68 +141,48 @@ function SubmitBugForm() {
 
       <Card>
         <CardContent className="pt-6 space-y-5">
-          {/* Module */}
           <div className="space-y-2">
             <Label>Module *</Label>
             <Select value={form.module} onValueChange={(v) => { update("module", v); setDuplicateConfirmed(false); }}>
               <SelectTrigger><SelectValue placeholder="Select module" /></SelectTrigger>
-              <SelectContent>
-                {MODULES.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-              </SelectContent>
+              <SelectContent>{MODULES.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
             </Select>
           </div>
 
-          {/* Duplicate awareness */}
           <DuplicateAwarenessList module={form.module} confirmed={duplicateConfirmed} onConfirm={setDuplicateConfirmed} />
 
-          {/* Bug title */}
           <div className="space-y-2">
             <Label>Bug Title * <span className="text-muted-foreground text-xs">({form.bug_title.length}/100)</span></Label>
             <Input value={form.bug_title} onChange={(e) => update("bug_title", e.target.value.slice(0, 100))} placeholder="Short description of the bug" />
           </div>
-
-          {/* Steps */}
           <div className="space-y-2">
             <Label>Steps to Reproduce * <span className="text-muted-foreground text-xs">({form.steps_to_reproduce.length}/300)</span></Label>
             <Textarea value={form.steps_to_reproduce} onChange={(e) => update("steps_to_reproduce", e.target.value.slice(0, 300))} placeholder="1. Go to... 2. Click on... 3. See error..." rows={3} />
           </div>
-
-          {/* Expected */}
           <div className="space-y-2">
             <Label>Expected Behavior * <span className="text-muted-foreground text-xs">({form.expected_behavior.length}/200)</span></Label>
             <Textarea value={form.expected_behavior} onChange={(e) => update("expected_behavior", e.target.value.slice(0, 200))} placeholder="What should have happened?" rows={2} />
           </div>
-
-          {/* Actual */}
           <div className="space-y-2">
             <Label>Actual Behavior * <span className="text-muted-foreground text-xs">({form.actual_behavior.length}/200)</span></Label>
             <Textarea value={form.actual_behavior} onChange={(e) => update("actual_behavior", e.target.value.slice(0, 200))} placeholder="What actually happened?" rows={2} />
           </div>
 
-          {/* Screenshot */}
           <div className="space-y-2">
             <Label>Screenshot * <span className="text-xs text-destructive">(Required)</span></Label>
             <label className="flex flex-col items-center justify-center border-2 border-dashed rounded-xl p-6 cursor-pointer hover:border-primary/50 transition-colors">
-              {screenshotPreview ? (
-                <img src={screenshotPreview} alt="Preview" className="max-h-40 rounded-lg object-contain" />
-              ) : (
-                <>
-                  <ImagePlus className="w-8 h-8 text-muted-foreground mb-2" />
-                  <span className="text-sm text-muted-foreground">Tap to upload screenshot</span>
-                </>
-              )}
+              {screenshotPreview
+                ? <img src={screenshotPreview} alt="Preview" className="max-h-40 rounded-lg object-contain" />
+                : <><ImagePlus className="w-8 h-8 text-muted-foreground mb-2" /><span className="text-sm text-muted-foreground">Tap to upload screenshot</span></>}
               <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFile(e, "screenshot")} />
             </label>
           </div>
 
-          {/* Recording */}
           <div className="space-y-2">
             <Label>Screen Recording <span className="text-xs text-muted-foreground">(Optional)</span></Label>
             <label className="flex items-center gap-3 border rounded-xl p-4 cursor-pointer hover:border-primary/50 transition-colors">
               <Video className="w-5 h-5 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">
-                {recordingFile ? recordingFile.name : "Tap to upload recording"}
-              </span>
+              <span className="text-sm text-muted-foreground">{recordingFile ? recordingFile.name : "Tap to upload recording"}</span>
               <input type="file" accept="video/*" className="hidden" onChange={(e) => handleFile(e, "recording")} />
             </label>
           </div>
@@ -209,7 +190,6 @@ function SubmitBugForm() {
           <Button onClick={() => mutation.mutate()} disabled={!canSubmit} className="w-full h-12 text-base font-semibold">
             {uploading ? "Uploading files..." : mutation.isPending ? "Submitting..." : "Submit Bug Report"}
           </Button>
-
           {!screenshotFile && form.module && <p className="text-xs text-destructive text-center">Screenshot is required to submit</p>}
           {form.module && !duplicateConfirmed && <p className="text-xs text-amber-600 text-center">Please confirm this is not a duplicate</p>}
         </CardContent>
@@ -219,9 +199,5 @@ function SubmitBugForm() {
 }
 
 export default function SubmitBug() {
-  return (
-    <ParticipantGateWrapper>
-      <SubmitBugForm />
-    </ParticipantGateWrapper>
-  );
+  return <ParticipantGateWrapper><SubmitBugForm /></ParticipantGateWrapper>;
 }

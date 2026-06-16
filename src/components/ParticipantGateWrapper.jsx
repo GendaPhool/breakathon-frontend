@@ -1,11 +1,11 @@
+import { Navigate } from "react-router-dom";
 import { useParticipantSession } from "@/components/ParticipantSessionProvider";
-import ParticipantGate from "@/pages/ParticipantGate";
 
 export default function ParticipantGateWrapper({ children }) {
-  const { session, login } = useParticipantSession();
+  const { session } = useParticipantSession();
 
   if (!session) {
-    return <ParticipantGate onSuccess={login} />;
+    return <Navigate to="/login" replace />;
   }
 
   return children;

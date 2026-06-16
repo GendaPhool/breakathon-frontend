@@ -8,8 +8,10 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { ParticipantSessionProvider } from '@/components/ParticipantSessionProvider';
 
-import Login from '@/pages/Login';
-import Register from '@/pages/Register';
+// Separate login pages — no shared tab UI
+import ParticipantLogin from '@/pages/ParticipantLogin';
+import MarshalLogin from '@/pages/MarshalLogin';
+
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 
@@ -47,28 +49,35 @@ const AuthenticatedApp = () => {
       {/* Fully public — no auth required */}
       <Route path="/event-register" element={<PublicRegister />} />
 
-      {/* Auth pages */}
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Navigate to="/login" replace />} />
+      {/* ── Separate login pages ─────────────────────────────────
+          Participants  →  /user/login
+          Marshals      →  /admin/login
+          Old /login    →  redirect to /user/login so old links don't break
+      ──────────────────────────────────────────────────────── */}
+      <Route path="/user/login"  element={<ParticipantLogin />} />
+      <Route path="/admin/login" element={<MarshalLogin />} />
+      <Route path="/login"       element={<Navigate to="/user/login" replace />} />
+      <Route path="/register"    element={<Navigate to="/user/login" replace />} />
+
       <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/reset-password"  element={<ResetPassword />} />
 
       {/* Participant pages — no JWT needed, ParticipantGateWrapper handles its own gate */}
       <Route element={<AppLayout />}>
-        <Route path="/" element={<Home />} />
-        <Route path="/submit" element={<SubmitBug />} />
-        <Route path="/my-reports" element={<MyReports />} />
+        <Route path="/"            element={<Home />} />
+        <Route path="/submit"      element={<SubmitBug />} />
+        <Route path="/my-reports"  element={<MyReports />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
       </Route>
 
-      {/* Marshal pages — JWT required */}
-      <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
+      {/* Marshal pages — JWT required; unauthenticated → /admin/login */}
+      <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/admin/login" replace />} />}>
         <Route element={<AppLayout />}>
-          <Route path="/marshal/queue" element={<MarshalGateWrapper><MarshalQueue /></MarshalGateWrapper>} />
+          <Route path="/marshal/queue"         element={<MarshalGateWrapper><MarshalQueue /></MarshalGateWrapper>} />
           <Route path="/marshal/registrations" element={<MarshalGateWrapper><MarshalRegistrations /></MarshalGateWrapper>} />
-          <Route path="/marshal/checkin" element={<MarshalGateWrapper><MarshalCheckin /></MarshalGateWrapper>} />
-          <Route path="/marshal/stats" element={<MarshalGateWrapper><MarshalStats /></MarshalGateWrapper>} />
-          <Route path="/marshal/settings" element={<MarshalGateWrapper><AdminSettings /></MarshalGateWrapper>} />
+          <Route path="/marshal/checkin"       element={<MarshalGateWrapper><MarshalCheckin /></MarshalGateWrapper>} />
+          <Route path="/marshal/stats"         element={<MarshalGateWrapper><MarshalStats /></MarshalGateWrapper>} />
+          <Route path="/marshal/settings"      element={<MarshalGateWrapper><AdminSettings /></MarshalGateWrapper>} />
         </Route>
       </Route>
 
