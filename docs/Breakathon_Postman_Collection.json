@@ -1,0 +1,548 @@
+{
+  "info": {
+    "name": "Genda Phool Break-A-Thon API",
+    "description": "Complete API collection for the Break-A-Thon platform. Run the 'Marshal Login' request first, then copy the token into the collection variable {{marshal_token}}.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:3000", "type": "string" },
+    { "key": "app_id",   "value": "default",              "type": "string" },
+    { "key": "marshal_token", "value": "PASTE_TOKEN_HERE_AFTER_LOGIN", "type": "string" },
+    { "key": "bug_id",        "value": "cmqhzkr480006111e16lbxc25",    "type": "string" },
+    { "key": "settings_id",   "value": "singleton",                    "type": "string" },
+    { "key": "reg_id",        "value": "cmqgjespm000114epti5fjglf",    "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "1. Auth",
+      "item": [
+        {
+          "name": "Marshal Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.success && json.data && json.data.token) {",
+                  "    pm.collectionVariables.set('marshal_token', json.data.token);",
+                  "    console.log('Token saved automatically!');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/api/v1/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"marshal@breakathon.com\",\"password\":\"marshal123\"}"
+            },
+            "description": "Login as marshal. Token is auto-saved to {{marshal_token}} variable."
+          }
+        },
+        {
+          "name": "Marshal Login — Wrong Password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/api/v1/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"marshal@breakathon.com\",\"password\":\"wrongpass\"}"
+            },
+            "description": "Expected: 401"
+          }
+        },
+        {
+          "name": "Who Am I (verify token)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{marshal_token}}" }],
+            "url": "{{base_url}}/api/v1/auth/me",
+            "description": "Expected: role = marshal"
+          }
+        },
+        {
+          "name": "Who Am I — No Token",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/auth/me",
+            "description": "Expected: 401"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Participant Login",
+      "item": [
+        {
+          "name": "Participant Login — Valid",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/api/apps/{{app_id}}/user/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"dhruvsaini765@gmail.com\",\"phone\":\"9376721221\"}"
+            },
+            "description": "Expected: participant_id, name, registration_id"
+          }
+        },
+        {
+          "name": "Participant Login — Wrong Phone",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/api/apps/{{app_id}}/user/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"dhruvsaini765@gmail.com\",\"phone\":\"0000000000\"}"
+            },
+            "description": "Expected: 401"
+          }
+        },
+        {
+          "name": "Participant Login — Not Checked In",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/api/apps/{{app_id}}/user/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"notcheckedin@test.com\",\"phone\":\"9999999999\"}"
+            },
+            "description": "Expected: 403 or 404"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Event Settings",
+      "item": [
+        {
+          "name": "Get Event Settings (Public)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/apps/{{app_id}}/entities/EventSettings",
+            "description": "No auth needed. Returns settings + current_participants count."
+          }
+        },
+        {
+          "name": "Update Event Settings (Marshal)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{marshal_token}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/apps/{{app_id}}/admin/entities/EventSettings/{{settings_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event_name\": \"Genda Phool Break-A-Thon\",\n  \"event_date\": \"2026-06-20\",\n  \"event_time\": \"10:00 AM\",\n  \"venue\": \"Vadodara Tech Hub\",\n  \"registration_fee\": 149,\n  \"registration_open\": true,\n  \"event_started\": true,\n  \"event_ended\": false,\n  \"leaderboard_visible\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Toggle Event Started ON",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{marshal_token}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/apps/{{app_id}}/admin/entities/EventSettings/{{settings_id}}",
+            "body": { "mode": "raw", "raw": "{\"event_started\": true}" }
+          }
+        },
+        {
+          "name": "Toggle Event Ended ON",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{marshal_token}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/apps/{{app_id}}/admin/entities/EventSettings/{{settings_id}}",
+            "body": { "mode": "raw", "raw": "{\"event_ended\": true}" }
+          }
+        },
+        {
+          "name": "Hide Leaderboard",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{marshal_token}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/apps/{{app_id}}/admin/entities/EventSettings/{{settings_id}}",
+            "body": { "mode": "raw", "raw": "{\"leaderboard_visible\": false}" }
+          }
+        },
+        {
+          "name": "Update Settings — No Auth (should fail)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/api/apps/{{app_id}}/admin/entities/EventSettings/{{settings_id}}",
+            "body": { "mode": "raw", "raw": "{\"event_name\": \"Hacked\"}" },
+            "description": "Expected: 401"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Registrations",
+      "item": [
+        {
+          "name": "List All Registrations (Marshal)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{marshal_token}}" }],
+            "url": "{{base_url}}/api/apps/{{app_id}}/admin/entities/Registration"
+          }
+        },
+        {
+          "name": "List Registrations — No Auth (should fail)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/apps/{{app_id}}/admin/entities/Registration",
+            "description": "Expected: 401"
+          }
+        },
+        {
+          "name": "Register New Participant (Public)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/api/apps/{{app_id}}/entities/Registration",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test Participant\",\n  \"email\": \"newtest@example.com\",\n  \"phone\": \"9123456780\",\n  \"college\": \"Test University\",\n  \"payment_status\": \"Pending Verification\",\n  \"payment_reference\": \"pay_test_postman\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Register — Duplicate Email (should fail)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/api/apps/{{app_id}}/entities/Registration",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Dup\",\"email\":\"dhruvsaini765@gmail.com\",\"phone\":\"9999999999\",\"payment_status\":\"Pending Verification\"}"
+            },
+            "description": "Expected: 409 or 422"
+          }
+        },
+        {
+          "name": "Verify Payment + Assign Participant ID",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{marshal_token}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/apps/{{app_id}}/admin/entities/Registration/{{reg_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"payment_status\": \"Verified\", \"participant_id\": \"GP-099\"}"
+            }
+          }
+        },
+        {
+          "name": "Check In Participant",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{marshal_token}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/apps/{{app_id}}/admin/entities/Registration/{{reg_id}}",
+            "body": { "mode": "raw", "raw": "{\"checked_in\": true}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Bug Reports",
+      "item": [
+        {
+          "name": "List All Bugs (Public)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/apps/{{app_id}}/entities/BugReport"
+          }
+        },
+        {
+          "name": "List All Bugs (Marshal Auth)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{marshal_token}}" }],
+            "url": "{{base_url}}/api/apps/{{app_id}}/admin/entities/BugReport"
+          }
+        },
+        {
+          "name": "List Bugs — Pending Review Only",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/apps/{{app_id}}/entities/BugReport?status=Pending%20Review",
+              "query": [{ "key": "status", "value": "Pending Review" }]
+            }
+          }
+        },
+        {
+          "name": "List Bugs — by Module",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/apps/{{app_id}}/entities/BugReport?module=Payment%20System",
+              "query": [{ "key": "module", "value": "Payment System" }]
+            }
+          }
+        },
+        {
+          "name": "Submit Bug Report (Participant)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/api/apps/{{app_id}}/user/entities/BugReport",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"module\": \"Payment System\",\n  \"bug_title\": \"Checkout button freezes on tap\",\n  \"steps_to_reproduce\": \"1. Open Customer App\\n2. Add item to cart\\n3. Tap Checkout button\",\n  \"expected_behavior\": \"Payment screen should open\",\n  \"actual_behavior\": \"Button freezes, nothing happens for 10+ seconds\",\n  \"screenshot_url\": \"http://localhost:3000/uploads/test.png\",\n  \"screen_recording_url\": \"\",\n  \"participant_id\": \"GP-002\",\n  \"participant_name\": \"dhruvsaini\",\n  \"status\": \"Pending Review\",\n  \"points_awarded\": 0\n}"
+            }
+          }
+        },
+        {
+          "name": "Submit Bug — Fake Participant (should fail)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/api/apps/{{app_id}}/user/entities/BugReport",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"module\":\"Customer App\",\"bug_title\":\"Hack\",\"steps_to_reproduce\":\"s\",\"expected_behavior\":\"e\",\"actual_behavior\":\"a\",\"screenshot_url\":\"http://localhost:3000/uploads/test.png\",\"participant_id\":\"GP-FAKE\",\"participant_name\":\"Hacker\",\"status\":\"Pending Review\",\"points_awarded\":0}"
+            },
+            "description": "Expected: 403"
+          }
+        },
+        {
+          "name": "Validate Bug — Critical (10 pts auto)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{marshal_token}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/apps/{{app_id}}/admin/entities/BugReport/{{bug_id}}",
+            "body": { "mode": "raw", "raw": "{\"status\": \"Validated\", \"severity\": \"Critical\"}" },
+            "description": "Expected: status=Validated, severity=Critical, points_awarded=10"
+          }
+        },
+        {
+          "name": "Validate Bug — Launch Blocker (15 pts)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{marshal_token}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/apps/{{app_id}}/admin/entities/BugReport/{{bug_id}}",
+            "body": { "mode": "raw", "raw": "{\"status\": \"Validated\", \"severity\": \"Launch Blocker\"}" }
+          }
+        },
+        {
+          "name": "Validate Bug — High (7 pts)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{marshal_token}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/apps/{{app_id}}/admin/entities/BugReport/{{bug_id}}",
+            "body": { "mode": "raw", "raw": "{\"status\": \"Validated\", \"severity\": \"High\"}" }
+          }
+        },
+        {
+          "name": "Validate Bug — Medium (4 pts)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{marshal_token}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/apps/{{app_id}}/admin/entities/BugReport/{{bug_id}}",
+            "body": { "mode": "raw", "raw": "{\"status\": \"Validated\", \"severity\": \"Medium\"}" }
+          }
+        },
+        {
+          "name": "Validate Bug — Low (1 pt)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{marshal_token}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/apps/{{app_id}}/admin/entities/BugReport/{{bug_id}}",
+            "body": { "mode": "raw", "raw": "{\"status\": \"Validated\", \"severity\": \"Low\"}" }
+          }
+        },
+        {
+          "name": "Reject Bug (auto 0 pts)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{marshal_token}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/apps/{{app_id}}/admin/entities/BugReport/{{bug_id}}",
+            "body": { "mode": "raw", "raw": "{\"status\": \"Rejected\"}" },
+            "description": "Expected: points_awarded = 0"
+          }
+        },
+        {
+          "name": "Mark Duplicate (auto 0.5 pts)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{marshal_token}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/apps/{{app_id}}/admin/entities/BugReport/{{bug_id}}",
+            "body": { "mode": "raw", "raw": "{\"status\": \"Duplicate\", \"duplicate_of\": \"original_bug_id\"}" },
+            "description": "Expected: points_awarded = 0.5"
+          }
+        },
+        {
+          "name": "Needs More Info with Notes",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{marshal_token}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/apps/{{app_id}}/admin/entities/BugReport/{{bug_id}}",
+            "body": { "mode": "raw", "raw": "{\"status\": \"Needs More Info\", \"marshal_notes\": \"Please provide a clearer screenshot\"}" }
+          }
+        },
+        {
+          "name": "Override Points Manually",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{marshal_token}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/apps/{{app_id}}/admin/entities/BugReport/{{bug_id}}",
+            "body": { "mode": "raw", "raw": "{\"points_awarded\": 12}" }
+          }
+        },
+        {
+          "name": "Invalid Severity — DB Enum (should fail)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{marshal_token}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/apps/{{app_id}}/admin/entities/BugReport/{{bug_id}}",
+            "body": { "mode": "raw", "raw": "{\"severity\": \"LAUNCH_BLOCKER\"}" },
+            "description": "Expected: 422 — only human-readable labels accepted"
+          }
+        },
+        {
+          "name": "Update Bug — No Auth (should fail)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/api/apps/{{app_id}}/admin/entities/BugReport/{{bug_id}}",
+            "body": { "mode": "raw", "raw": "{\"status\": \"Validated\"}" },
+            "description": "Expected: 401"
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. File Upload",
+      "item": [
+        {
+          "name": "Upload Screenshot",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/apps/{{app_id}}/user/integrations/Core/UploadFile",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "",
+                  "description": "Select a PNG or JPG file"
+                }
+              ]
+            },
+            "description": "Select a file in the Body tab → form-data → file field. Expected: file_url in response."
+          }
+        },
+        {
+          "name": "Access Uploaded File",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/uploads/your_filename_here.png",
+            "description": "Replace filename with one returned from upload. Expected: 200 with image."
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Razorpay Payment",
+      "item": [
+        {
+          "name": "Create Payment Order",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/api/apps/{{app_id}}/user/functions/createRazorpayOrder",
+            "body": { "mode": "raw", "raw": "{}" },
+            "description": "Expected: order_id, amount: 14900, currency: INR"
+          }
+        },
+        {
+          "name": "Verify Payment — Tampered (should fail)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/api/apps/{{app_id}}/user/functions/createRazorpayOrder/verify",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razorpay_order_id\": \"order_fake123\",\n  \"razorpay_payment_id\": \"pay_fake123\",\n  \"razorpay_signature\": \"invalidsignature\"\n}"
+            },
+            "description": "Expected: 400 with verified: false"
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Email",
+      "item": [
+        {
+          "name": "Send Registration Confirmation",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/api/apps/{{app_id}}/functions/sendRegistrationConfirmation",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"registration_id\": \"your_registration_id\",\n  \"email\": \"test@example.com\",\n  \"name\": \"Test User\"\n}"
+            },
+            "description": "Sends confirmation email. Returns 200 even if SMTP not configured."
+          }
+        }
+      ]
+    }
+  ]
+}

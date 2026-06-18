@@ -251,10 +251,10 @@ export default function PublicRegister() {
             </div>
             <p className="text-xs text-muted-foreground">Screenshot this for your records</p>
             <a
-              href="/submit"
+              href="/user/login"
               className="block w-full text-center bg-primary text-primary-foreground rounded-lg py-3 font-semibold text-sm hover:bg-primary/90 transition-colors"
             >
-              Go to Dashboard →
+              Login to Submit Bugs →
             </a>
           </CardContent>
         </Card>
