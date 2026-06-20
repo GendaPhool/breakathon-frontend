@@ -124,19 +124,29 @@ function Motes() {
 }
 
 function CameraRig({ reduced }) {
-  const { camera, pointer } = useThree();
+  const { camera, pointer, size } = useThree();
+  const isTablet = size.width < 1024;
+  
   useFrame(() => {
     if (reduced) return;
+    const targetZ = isTablet ? 12 : 9;
     camera.position.x += (pointer.x * 0.7 - camera.position.x) * 0.04;
     camera.position.y += (pointer.y * 0.4 - camera.position.y) * 0.04;
-    camera.lookAt(0, 0, 0);
+    camera.position.z += (targetZ - camera.position.z) * 0.04;
+    camera.lookAt(0, isTablet ? -0.6 : 0, 0);
   });
   return null;
 }
 
 function SceneContents({ reduced }) {
+  const { size } = useThree();
+  const isTablet = size.width < 1024;
+
+  const yOffset = isTablet ? -0.6 : 0;
+  const scale = isTablet ? 0.85 : 1.0;
+
   return (
-    <>
+    <group position={[0, yOffset, 0]} scale={[scale, scale, scale]}>
       <hemisphereLight args={["#fff7e6", "#5a4632", 0.7]} />
       <ambientLight intensity={0.4} />
       <directionalLight position={[5, 8, 6]} intensity={1.3} color="#fff4dd" />
@@ -145,7 +155,7 @@ function SceneContents({ reduced }) {
       <Motes />
       <BugCrawler frozen={reduced} />
       <CameraRig reduced={reduced} />
-    </>
+    </group>
   );
 }
 
