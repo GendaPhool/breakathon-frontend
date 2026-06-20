@@ -49,6 +49,9 @@ const AuthenticatedApp = () => {
       {/* Fully public — no auth required */}
       <Route path="/event-register" element={<PublicRegister />} />
 
+      {/* Landing page — full-bleed, its own nav; not wrapped in AppLayout */}
+      <Route path="/" element={<Home />} />
+
       {/* ── Separate login pages ─────────────────────────────────
           Participants  →  /user/login
           Marshals      →  /admin/login
@@ -64,7 +67,6 @@ const AuthenticatedApp = () => {
 
       {/* Participant pages — no JWT needed, ParticipantGateWrapper handles its own gate */}
       <Route element={<AppLayout />}>
-        <Route path="/"            element={<Home />} />
         <Route path="/submit"      element={<SubmitBug />} />
         <Route path="/my-reports"  element={<MyReports />} />
         <Route path="/leaderboard" element={<Leaderboard />} />

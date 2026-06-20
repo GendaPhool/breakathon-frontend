@@ -1,12 +1,7 @@
-import { useAuth } from "@/lib/AuthContext";
-import { Navigate } from "react-router-dom";
+import LandingPage from "./LandingPage";
 
+// The landing page is always the public entry point at "/".
+// Marshals and participants reach their app areas via the nav / CTAs.
 export default function Home() {
-  const { user } = useAuth();
-  const role = user?.role || "participant";
-
-  if (role === "marshal") {
-    return <Navigate to="/marshal/queue" replace />;
-  }
-  return <Navigate to="/submit" replace />;
+  return <LandingPage />;
 }
