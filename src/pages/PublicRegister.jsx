@@ -96,6 +96,9 @@ export default function PublicRegister() {
       // 409 = server rejected duplicate email
       if (err.status === 409) {
         setErrors({ email: "This email is already registered. Contact us if you have an issue." });
+      } else if (err.status === 400) {
+        // Backend verifies payment_reference against Razorpay's API — random/fake IDs land here
+        setErrors({ payment_reference: "Invalid Payment ID. Please complete payment via Razorpay, or contact support." });
       }
     },
   });
@@ -409,7 +412,7 @@ export default function PublicRegister() {
                   onChange={(e) => update("payment_reference", e.target.value)}
                   placeholder="Auto-filled after payment, or enter manually"
                 />
-                <p className="text-xs text-muted-foreground">Auto-filled after Razorpay payment. Enter manually if auto-fill fails.</p>
+                <p className="text-xs text-muted-foreground">Auto-filled after Razorpay payment. Manual entry is verified against Razorpay before your registration is accepted.</p>
               </Field>
 
               {mutation.isError && !errors.email && (
