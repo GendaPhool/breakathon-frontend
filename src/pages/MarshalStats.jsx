@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { entities, auth, uploadFile } from "@/api/apiClient";
+import { entities } from "@/api/apiClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LayoutDashboard, Bug, AlertTriangle, Trophy } from "lucide-react";
+import { LayoutDashboard, AlertTriangle, Trophy } from "lucide-react";
 import { useMemo } from "react";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
 

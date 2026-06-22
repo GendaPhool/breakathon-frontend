@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { getMarshalSession, setMarshalSession, clearMarshalSession } from "@/lib/marshalSession";
 import MarshalGate from "@/pages/MarshalGate";
 

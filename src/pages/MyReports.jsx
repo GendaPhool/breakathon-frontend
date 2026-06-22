@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { entities, auth, uploadFile } from "@/api/apiClient";
+import { entities } from "@/api/apiClient";
 import { Card, CardContent } from "@/components/ui/card";
 import { ClipboardList } from "lucide-react";
 import StatusBadge from "@/components/StatusBadge";

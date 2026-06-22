@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { entities, functions, uploadFile } from "@/api/apiClient";
+import { entities, functions } from "@/api/apiClient";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,19 +59,16 @@ export default function PublicRegister() {
     return e;
   };
 
-  const validatePayment = () => {
-    const e = {};
-    if (!form.payment_reference.trim()) e.payment_reference = "Please complete the payment above first";
-    return e;
-  };
-
   // ── Submit Registration ───────────────────────────────────────
+  // Takes the verified Razorpay payment ID directly (not from form state) to avoid
+  // a race with React's state batching — we submit the instant payment is verified.
   const mutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (paymentReference) => {
       const reg = await entities.Registration.create({
         ...form,
         email:             form.email.toLowerCase().trim(),
         phone:             form.phone.replace(/\s/g, ""),
+        payment_reference: paymentReference,
         payment_status:    "Pending Verification",
         checked_in:        false,
         badge_printed:     false,
@@ -96,9 +93,6 @@ export default function PublicRegister() {
       // 409 = server rejected duplicate email
       if (err.status === 409) {
         setErrors({ email: "This email is already registered. Contact us if you have an issue." });
-      } else if (err.status === 400) {
-        // Backend verifies payment_reference against Razorpay's API — random/fake IDs land here
-        setErrors({ payment_reference: "Invalid Payment ID. Please complete payment via Razorpay, or contact support." });
       }
     },
   });
@@ -108,10 +102,6 @@ export default function PublicRegister() {
       const e = validateForm();
       if (Object.keys(e).length > 0) { setErrors(e); return; }
       setStep(2);
-    } else if (step === 2) {
-      const e = validatePayment();
-      if (Object.keys(e).length > 0) { setErrors(e); return; }
-      mutation.mutate();
     }
   };
 
@@ -121,7 +111,9 @@ export default function PublicRegister() {
   //   2. Razorpay checkout modal opens
   //   3. On payment success, Razorpay calls handler with payment details
   //   4. We POST to our backend to verify the HMAC signature
-  //   5. Only after server confirms the signature do we set payment_reference
+  //   5. Signature valid → registration is submitted automatically, no extra
+  //      step or manual entry required. The verified Razorpay payment ID is
+  //      still saved on the registration record.
   const handleRazorpayPayment = async () => {
     if (!razorpayLoaded) return;
     setPaymentLoading(true);
@@ -155,13 +147,14 @@ export default function PublicRegister() {
             });
 
             if (verifyRes?.verified) {
-              // Step 5 — signature valid, store the payment ID
+              // Step 5 — signature valid: save payment id for display, then auto-submit
               update("payment_reference", response.razorpay_payment_id);
+              mutation.mutate(response.razorpay_payment_id);
             } else {
               setErrors({ payment_reference: "Payment verification failed. Please contact support." });
             }
           } catch (_err) {
-            setErrors({ payment_reference: "Could not verify payment. Please enter your Payment ID manually." });
+            setErrors({ payment_reference: "Could not verify payment. Please contact support." });
           } finally {
             setPaymentLoading(false);
           }
@@ -386,53 +379,44 @@ export default function PublicRegister() {
                   <Button
                     className="w-full bg-primary hover:bg-primary/90"
                     onClick={handleRazorpayPayment}
-                    disabled={paymentLoading || !razorpayLoaded || !!form.payment_reference}
+                    disabled={paymentLoading || !razorpayLoaded || !!form.payment_reference || mutation.isPending}
                   >
                     {paymentLoading
                       ? "Opening Payment..."
-                      : form.payment_reference
-                        ? "Payment Done ✓"
-                        : "Pay ₹149 Now"}
+                      : mutation.isPending
+                        ? "Submitting Registration..."
+                        : form.payment_reference
+                          ? "Payment Done ✓"
+                          : "Pay ₹149 Now"}
                   </Button>
                 </CardContent>
               </Card>
 
-              {/* Success banner after payment */}
+              {/* Success banner after payment — registration auto-submits right after this */}
               {form.payment_reference && (
                 <div className="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg p-3">
                   <CheckCircle2 className="w-4 h-4 shrink-0" />
-                  Payment verified! ID: <strong>{form.payment_reference}</strong>
+                  Payment verified! Submitting your registration...
                 </div>
               )}
 
-              {/* Manual fallback field */}
-              <Field label="Payment ID / Reference *" error={errors.payment_reference}>
-                <Input
-                  value={form.payment_reference}
-                  onChange={(e) => update("payment_reference", e.target.value)}
-                  placeholder="Auto-filled after payment, or enter manually"
-                />
-                <p className="text-xs text-muted-foreground">Auto-filled after Razorpay payment. Manual entry is verified against Razorpay before your registration is accepted.</p>
-              </Field>
+              {errors.payment_reference && (
+                <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 rounded-lg p-3">
+                  <AlertCircle className="w-4 h-4 shrink-0" /> {errors.payment_reference}
+                </div>
+              )}
 
-              {mutation.isError && !errors.email && (
+              {mutation.isError && !errors.email && !errors.payment_reference && (
                 <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 rounded-lg p-3">
                   <AlertCircle className="w-4 h-4" /> Something went wrong. Please try again.
                 </div>
               )}
 
-              <div className="flex gap-3">
-                <Button variant="outline" onClick={() => setStep(1)} className="flex-1 h-11">
+              {!form.payment_reference && !paymentLoading && (
+                <Button variant="outline" onClick={() => setStep(1)} className="w-full h-11">
                   <ChevronLeft className="w-4 h-4" /> Back
                 </Button>
-                <Button
-                  onClick={handleNextStep}
-                  disabled={mutation.isPending}
-                  className="flex-1 h-11 font-semibold"
-                >
-                  {mutation.isPending ? "Processing..." : "Complete Registration"}
-                </Button>
-              </div>
+              )}
             </CardContent>
           </Card>
         )}
